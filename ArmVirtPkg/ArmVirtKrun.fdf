@@ -160,6 +160,7 @@ READ_LOCK_STATUS   = TRUE
   INF OvmfPkg/VirtioRngDxe/VirtioRng.inf
   INF OvmfPkg/VirtioSerialDxe/VirtioSerial.inf
   INF OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
+  INF OvmfPkg/VirtioKeyboardDxe/VirtioKeyboard.inf
 
   INF ShellPkg/Application/Shell/Shell.inf
   INF ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf

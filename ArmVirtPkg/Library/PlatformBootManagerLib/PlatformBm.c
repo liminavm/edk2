@@ -298,6 +298,33 @@ IsVirtioRng (
 }
 
 /**
+  This FILTER_FUNCTION checks if a handle is a Virtio input device at the
+  VIRTIO_DEVICE_PROTOCOL level (keyboard, tablet, and mouse all share id 18).
+**/
+STATIC
+BOOLEAN
+EFIAPI
+IsVirtioInput (
+  IN EFI_HANDLE    Handle,
+  IN CONST CHAR16  *ReportText
+  )
+{
+  EFI_STATUS              Status;
+  VIRTIO_DEVICE_PROTOCOL  *VirtIo;
+
+  Status = gBS->HandleProtocol (
+                  Handle,
+                  &gVirtioDeviceProtocolGuid,
+                  (VOID **)&VirtIo
+                  );
+  if (EFI_ERROR (Status)) {
+    return FALSE;
+  }
+
+  return (BOOLEAN)(VirtIo->SubSystemDeviceId == VIRTIO_SUBSYSTEM_INPUT);
+}
+
+/**
   This FILTER_FUNCTION checks if a handle corresponds to a Virtio GPU device at
   the VIRTIO_DEVICE_PROTOCOL level.
 **/
@@ -469,6 +496,54 @@ Connect (
     __func__,
     ReportText,
     Status
+    ));
+}
+
+/**
+  This CALLBACK_FUNCTION retrieves the EFI_DEVICE_PATH_PROTOCOL from the
+  handle, and adds it to ConIn (limina: the virtio keyboard, so the firmware
+  and GRUB get a real console input device in the window).
+**/
+STATIC
+VOID
+EFIAPI
+AddInput (
+  IN EFI_HANDLE    Handle,
+  IN CONST CHAR16  *ReportText
+  )
+{
+  EFI_STATUS                Status;
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
+
+  DevicePath = DevicePathFromHandle (Handle);
+  if (DevicePath == NULL) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: %s: handle %p: device path not found\n",
+      __func__,
+      ReportText,
+      Handle
+      ));
+    return;
+  }
+
+  Status = EfiBootManagerUpdateConsoleVariable (ConIn, DevicePath, NULL);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "%a: %s: adding to ConIn: %r\n",
+      __func__,
+      ReportText,
+      Status
+      ));
+    return;
+  }
+
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "%a: %s: added to ConIn\n",
+    __func__,
+    ReportText
     ));
 }
 
@@ -860,6 +935,16 @@ PlatformBootManagerBeforeConsole (
   FilterAndProcess (&gVirtioDeviceProtocolGuid, IsVirtioGpu, Connect);
 
   FilterAndProcess (&gEfiGraphicsOutputProtocolGuid, NULL, AddOutput);
+
+  //
+  // limina: connect the virtio-mmio input device(s) so VirtioKeyboardDxe binds
+  // and produces EFI_SIMPLE_TEXT_INPUT_PROTOCOL, then add every SimpleTextIn
+  // handle to ConIn -- a real keyboard for firmware/GRUB from the window's
+  // virtio keyboard. (The hardcoded short-form USB path below is dead: no USB
+  // host controller / UsbKbDxe in this build.)
+  //
+  FilterAndProcess (&gVirtioDeviceProtocolGuid, IsVirtioInput, Connect);
+  FilterAndProcess (&gEfiSimpleTextInProtocolGuid, NULL, AddInput);
 
   //
   // Add the hardcoded short-form USB keyboard device path to ConIn.

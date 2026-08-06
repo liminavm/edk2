@@ -75,3 +75,4 @@
   gEfiGraphicsOutputProtocolGuid
   gEfiPciRootBridgeIoProtocolGuid
   gVirtioDeviceProtocolGuid
+  gEfiSimpleTextInProtocolGuid
