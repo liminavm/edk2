@@ -214,6 +214,10 @@
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution|1280
   gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution|800
+  # limina: keep the firmware/GRUB console at the modest resolution above; the
+  # host upscales it to fill the window (VirtioGpuDxe would otherwise clobber it
+  # with the host native size -> a tiny centered GRUB menu the host cannot upscale).
+  gUefiOvmfPkgTokenSpaceGuid.PcdVideoResolutionSource|1
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoHorizontalResolution|640
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoVerticalResolution|480
   gEfiMdeModulePkgTokenSpaceGuid.PcdConOutRow|0
@@ -328,6 +332,7 @@
   OvmfPkg/VirtioBlkDxe/VirtioBlk.inf
   OvmfPkg/VirtioRngDxe/VirtioRng.inf
   OvmfPkg/VirtioSerialDxe/VirtioSerial.inf
+  OvmfPkg/VirtioGpuDxe/VirtioGpu.inf
 
   #
   # FAT filesystem + GPT/MBR partitioning + UDF filesystem + virtio-fs

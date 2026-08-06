@@ -11,6 +11,7 @@
 
 #include <IndustryStandard/Pci22.h>
 #include <IndustryStandard/Virtio095.h>
+#include <IndustryStandard/Virtio10.h>
 #include <Library/BootLogoLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/PcdLib.h>
@@ -294,6 +295,34 @@ IsVirtioRng (
 
   return (BOOLEAN)(VirtIo->SubSystemDeviceId ==
                    VIRTIO_SUBSYSTEM_ENTROPY_SOURCE);
+}
+
+/**
+  This FILTER_FUNCTION checks if a handle corresponds to a Virtio GPU device at
+  the VIRTIO_DEVICE_PROTOCOL level.
+**/
+STATIC
+BOOLEAN
+EFIAPI
+IsVirtioGpu (
+  IN EFI_HANDLE    Handle,
+  IN CONST CHAR16  *ReportText
+  )
+{
+  EFI_STATUS              Status;
+  VIRTIO_DEVICE_PROTOCOL  *VirtIo;
+
+  Status = gBS->HandleProtocol (
+                  Handle,
+                  &gVirtioDeviceProtocolGuid,
+                  (VOID **)&VirtIo
+                  );
+  if (EFI_ERROR (Status)) {
+    return FALSE;
+  }
+
+  return (BOOLEAN)(VirtIo->SubSystemDeviceId ==
+                   VIRTIO_SUBSYSTEM_GPU_DEVICE);
 }
 
 /**
@@ -823,6 +852,13 @@ PlatformBootManagerBeforeConsole (
   // Now add the device path of all handles with GOP on them to ConOut and
   // ErrOut.
   //
+  //
+  // limina: connect the virtio-mmio GPU so VirtioGpuDxe produces its GOP before
+  // ConOut is populated below; the mmio (non-PCI) GOP otherwise appears only
+  // after EfiBootManagerConnectAll() and never enters ConOut (blank console).
+  //
+  FilterAndProcess (&gVirtioDeviceProtocolGuid, IsVirtioGpu, Connect);
+
   FilterAndProcess (&gEfiGraphicsOutputProtocolGuid, NULL, AddOutput);
 
   //
