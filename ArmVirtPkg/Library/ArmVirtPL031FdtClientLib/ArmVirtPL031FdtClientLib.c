@@ -83,8 +83,8 @@ ArmVirtPL031FdtClientLibConstructor (
                         FdtClient,
                         Node,
                         "status",
-                        "disabled",
-                        sizeof ("disabled")
+                        "okay",
+                        sizeof ("okay")
                         );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_WARN, "Failed to set PL031 status to 'disabled'\n"));
