@@ -1,0 +1,43 @@
+## @file
+#  Hand a VMM-provided, file-backed UEFI variable store, described in the
+#  device tree, to the emulated variable driver.
+#
+#  Copyright (c) 2026, Gustavo Noronha Silva. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = KrunEfiVarsPei
+  FILE_GUID                      = 77607846-5B25-4D76-91C0-0BD92071D168
+  MODULE_TYPE                    = PEIM
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = KrunEfiVarsPeiEntryPoint
+
+[Sources]
+  KrunEfiVarsPei.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  ArmVirtPkg/ArmVirtPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  ArmMmuLib
+  BaseLib
+  DebugLib
+  FdtLib
+  HobLib
+  PcdLib
+  PeimEntryPoint
+
+[Pcd]
+  gArmVirtTokenSpaceGuid.PcdDeviceTreeInitialBaseAddress
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvStoreReserved   ## SOMETIMES_PRODUCES
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize            ## CONSUMES
+
+[Depex]
+  gEfiPeiMemoryDiscoveredPpiGuid AND gPcdPpiGuid
