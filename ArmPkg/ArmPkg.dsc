@@ -129,6 +129,7 @@
 
   ArmPkg/Library/ArmGenericTimerPhyCounterLib/ArmGenericTimerPhyCounterLib.inf
   ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
+  ArmPkg/Library/ArmGenericTimerVirtPhyCounterLib/ArmGenericTimerVirtPhyCounterLib.inf
 
   ArmPkg/Library/ArmTrngLib/ArmTrngLib.inf
   ArmPkg/Library/ArmHvcLib/ArmHvcLib.inf

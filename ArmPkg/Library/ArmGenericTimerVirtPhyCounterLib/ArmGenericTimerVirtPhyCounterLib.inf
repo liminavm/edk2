@@ -1,0 +1,30 @@
+#/** @file
+#  Implement ArmGenericTimerCounterLib using the virtual timer at EL1 and the
+#  physical timer at EL2
+#
+#  Copyright (c) 2014, Linaro Ltd. All rights reserved.<BR>
+#  Copyright (c) 2026, Gustavo Noronha Silva. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ArmGenericTimerVirtPhyCounterLib
+  FILE_GUID                      = CACFF83F-4AE0-4133-ACFF-F619583EFB94
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = ArmGenericTimerCounterLib
+
+[Sources]
+  ArmGenericTimerVirtPhyCounterLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+
+[LibraryClasses]
+  ArmLib
+  BaseLib

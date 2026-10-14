@@ -60,6 +60,8 @@
   QemuLoadImageLib|OvmfPkg/Library/GenericQemuLoadImageLib/GenericQemuLoadImageLib.inf
 
   TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
+  # Hypervisor.framework's EL1 virtual timer never fires at EL2 (nested virtualization).
+  ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtPhyCounterLib/ArmGenericTimerVirtPhyCounterLib.inf
 
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   BootLogoLib|MdeModulePkg/Library/BootLogoLib/BootLogoLib.inf
