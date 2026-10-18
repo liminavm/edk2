@@ -21,6 +21,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
 #include <Library/DebugLib.h>
 #include <Library/PcdLib.h>
 #include <Library/SafeIntLib.h>
@@ -139,6 +140,7 @@ EDKII_BOOT_LOGO2_PROTOCOL  mBootLogo2ProtocolTemplate = {
 
 EFI_EVENT                      mBootGraphicsReadyToBootEvent;
 UINTN                          mBootGraphicsResourceTableKey = 0;
+UINT32                         mBmpSize                      = 0;
 BOOLEAN                        mIsLogoValid                  = FALSE;
 EFI_GRAPHICS_OUTPUT_BLT_PIXEL  *mLogoBltBuffer               = NULL;
 UINTN                          mLogoDestX                    = 0;
@@ -405,6 +407,78 @@ GetBootLogo2 (
 }
 
 /**
+  Allocate boot services data pages from the lowest free memory that fits.
+
+  @param[in]  Pages    The number of pages.
+  @param[out] Address  The allocation.
+
+  @retval EFI_SUCCESS  The pages were allocated.
+  @retval other        No free range fits, or the memory map could not be read.
+**/
+STATIC
+EFI_STATUS
+AllocateLowestPages (
+  IN  UINTN                 Pages,
+  OUT EFI_PHYSICAL_ADDRESS  *Address
+  )
+{
+  EFI_STATUS             Status;
+  EFI_MEMORY_DESCRIPTOR  *Map;
+  EFI_MEMORY_DESCRIPTOR  *Entry;
+  UINTN                  MapSize;
+  UINTN                  MapKey;
+  UINTN                  DescriptorSize;
+  UINT32                 DescriptorVersion;
+  EFI_PHYSICAL_ADDRESS   Lowest;
+
+  MapSize = 0;
+  Map     = NULL;
+  Status  = gBS->GetMemoryMap (&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+  while (Status == EFI_BUFFER_TOO_SMALL) {
+    if (Map != NULL) {
+      FreePool (Map);
+    }
+
+    MapSize += 4 * DescriptorSize;
+    Map      = AllocatePool (MapSize);
+    if (Map == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    Status = gBS->GetMemoryMap (&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+  }
+
+  if (EFI_ERROR (Status)) {
+    if (Map != NULL) {
+      FreePool (Map);
+    }
+
+    return Status;
+  }
+
+  Lowest = MAX_ADDRESS;
+  for (Entry = Map;
+       (UINT8 *)Entry < (UINT8 *)Map + MapSize;
+       Entry = NEXT_MEMORY_DESCRIPTOR (Entry, DescriptorSize))
+  {
+    if ((Entry->Type == EfiConventionalMemory) &&
+        (Entry->NumberOfPages >= Pages) &&
+        (Entry->PhysicalStart < Lowest))
+    {
+      Lowest = Entry->PhysicalStart;
+    }
+  }
+
+  FreePool (Map);
+  if (Lowest == MAX_ADDRESS) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  *Address = Lowest;
+  return gBS->AllocatePages (AllocateAddress, EfiBootServicesData, Pages, Address);
+}
+
+/**
   Notify function for event group EFI_EVENT_GROUP_READY_TO_BOOT. This is used to
   install the Boot Graphics Resource Table.
 
@@ -423,6 +497,7 @@ BgrtReadyToBootEventNotify (
   EFI_ACPI_TABLE_PROTOCOL  *AcpiTableProtocol;
   VOID                     *ImageBuffer;
   UINT32                   BmpSize;
+  EFI_PHYSICAL_ADDRESS     ImagePages;
 
   //
   // Get ACPI Table protocol.
@@ -470,9 +545,11 @@ BgrtReadyToBootEventNotify (
     //
     // Free the old BMP image buffer
     //
-    ImageBuffer = (UINT8 *)(UINTN)mBootGraphicsResourceTableTemplate.ImageAddress;
-    if (ImageBuffer != NULL) {
-      FreePool (ImageBuffer);
+    if (mBootGraphicsResourceTableTemplate.ImageAddress != 0) {
+      gBS->FreePages (
+             mBootGraphicsResourceTableTemplate.ImageAddress,
+             EFI_SIZE_TO_PAGES (mBmpSize)
+             );
     }
 
     //
@@ -490,6 +567,24 @@ BgrtReadyToBootEventNotify (
     if (EFI_ERROR (Status)) {
       return;
     }
+
+    //
+    // The OS must find the image as EfiBootServicesData (Linux before 7.1
+    // accepts nothing else), but arm64 Linux takes boot services data as
+    // free memory and reserves the image only once it has parsed the BGRT.
+    // Its early allocations come from the top of RAM, where a pool buffer
+    // lands, so put the image at the bottom instead.
+    //
+    Status = AllocateLowestPages (EFI_SIZE_TO_PAGES (BmpSize), &ImagePages);
+    if (EFI_ERROR (Status)) {
+      FreePool (ImageBuffer);
+      return;
+    }
+
+    CopyMem ((VOID *)(UINTN)ImagePages, ImageBuffer, BmpSize);
+    FreePool (ImageBuffer);
+    ImageBuffer = (VOID *)(UINTN)ImagePages;
+    mBmpSize    = BmpSize;
 
     //
     // Free the logo buffer
