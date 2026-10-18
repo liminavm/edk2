@@ -197,9 +197,9 @@ READ_LOCK_STATUS   = TRUE
   !endif
 
   #
-  # TianoCore logo (splash screen)
+  # Limina logo (splash screen, and the BGRT image the OS shows while it boots)
   #
-  INF MdeModulePkg/Logo/LogoDxe.inf
+  INF ArmVirtPkg/KrunLogoDxe/KrunLogoDxe.inf
 
   #
   # Ramdisk support
