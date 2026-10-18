@@ -1,0 +1,42 @@
+## @file
+#  Hand the OS the ACPI tables libkrun generated, or else the device tree.
+#
+#  Copyright (c) 2026, Gustavo Noronha Silva. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = KrunAcpiPlatformDxe
+  FILE_GUID                      = 3E5C8F2A-9B41-4D7E-A6C2-5F1D08B7E934
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = KrunAcpiPlatformEntryPoint
+
+[Sources]
+  KrunAcpiPlatformDxe.c
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  DxeServicesTableLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Guids]
+  gEdkiiPlatformHasAcpiGuid       ## SOMETIMES_PRODUCES ## PROTOCOL
+  gEdkiiPlatformHasDeviceTreeGuid ## SOMETIMES_PRODUCES ## PROTOCOL
+
+[Protocols]
+  gEfiAcpiTableProtocolGuid       ## SOMETIMES_CONSUMES
+  gFdtClientProtocolGuid          ## CONSUMES
+
+[Depex]
+  gFdtClientProtocolGuid AND gEfiCpuArchProtocolGuid
